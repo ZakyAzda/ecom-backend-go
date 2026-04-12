@@ -19,6 +19,10 @@ func (r *CartRepository) Create(cart *models.Cart) error {
 
 func (r *CartRepository) GetMyCart(userID uint) ([]models.Cart, error) {
 	var carts []models.Cart
-	err := config.DB.Where("user_id = ?", userID).Find(&carts).Error
+	err := config.DB.Preload("Product").Where("user_id = ?", userID).Find(&carts).Error
 	return carts, err
+}
+
+func (r *CartRepository) DeleteFromCart(userID uint, cartID uint) error {
+	return config.DB.Where("id = ? AND user_id = ?", cartID, userID).Delete(&models.Cart{}).Error
 }

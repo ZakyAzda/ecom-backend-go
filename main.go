@@ -48,6 +48,7 @@ func main() {
 	// Fitur Belanja User
 	api.Post("/cart", controllers.AddToCart)
 	api.Get("/cart", controllers.GetMyCart)
+	api.Delete("/cart/:id", controllers.RemoveFromCart)
 	api.Post("/checkout", controllers.Checkout)
 	api.Get("/orders", controllers.GetMyOrders)
 

@@ -32,3 +32,14 @@ func GetMyCart(c *fiber.Ctx) error {
 	
 	return c.JSON(fiber.Map{"data": carts}) 
 }
+
+func RemoveFromCart(c *fiber.Ctx) error {
+	userID := uint(c.Locals("user_id").(float64))
+	cartID, _ := c.ParamsInt("id")
+
+	if err := cartService.RemoveFromCart(userID, uint(cartID)); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Item dihapus bos!"})
+}

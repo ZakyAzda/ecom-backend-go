@@ -33,3 +33,7 @@ func (s *CartService) AddToCart(userID uint, productID uint, quantity int) error
 func (s *CartService) GetMyCart(userID uint) ([]models.Cart, error) {
 	return s.Repo.GetMyCart(userID)
 }
+
+func (s *CartService) RemoveFromCart(userID uint, cartID uint) error {
+	return s.Repo.DeleteFromCart(userID, cartID)
+}

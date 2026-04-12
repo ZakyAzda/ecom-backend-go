@@ -23,7 +23,7 @@ type Product struct {
 	Description string   `json:"description"` 
 	Price       int      `json:"price"`
 	Stock       int      `json:"stock"`
-	ImageURL    string   `json:"imageUrl"`    
+	ImageURL    string   `json:"image_url" gorm:"column:image_url"`    
 	CategoryID  uint     `json:"categoryId"`  
 	Category    Category `json:"category" gorm:"foreignKey:CategoryID"`
 }
