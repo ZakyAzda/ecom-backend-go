@@ -11,11 +11,11 @@ type OrderService struct {
 }
 
 type CheckoutInput struct {
-	CartIDs       []uint
-	ProductID     uint
-	Quantity      int
-	Address       string
-	PaymentMethod string
+    CartIDs       []uint `json:"cart_ids"`
+    ProductID     uint   `json:"product_id"`
+    Quantity      int    `json:"quantity"`
+    Address       string `json:"address"`
+    PaymentMethod string `json:"payment_method"`
 }
 
 func (s *OrderService) Checkout(userID uint, input CheckoutInput) (models.Order, error) {
