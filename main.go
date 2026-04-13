@@ -18,18 +18,18 @@ func main() {
 
 	app := fiber.New()
 
-	// Tambahkan middleware CORS untuk mengizinkan request dari Next.js (port 3001)
+	// Middleware CORS
 	app.Use(cors.New(cors.Config{
 		AllowOrigins: "*",
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowMethods: "GET, POST, PUT, DELETE",
 	}))
 
-	// Buka akses folder uploads ke publik
+	// Static folder uploads
 	app.Static("/uploads", "./uploads")
 
 	// ==========================================
-	// 1. RUTE PUBLIK (Siapapun bisa akses)
+	// 1. RUTE PUBLIK
 	// ==========================================
 	app.Post("/api/register", controllers.Register)
 	app.Post("/api/login", controllers.Login)
@@ -37,11 +37,11 @@ func main() {
 	app.Get("/api/product-categories", controllers.GetProductCategories)
 	app.Get("/api/products/:id", controllers.GetProduct)
 
-	// ⚠️ DEV ONLY - Hapus rute ini sebelum deploy ke production!
+	// ⚠️ DEV ONLY
 	app.Post("/api/dev/make-admin", controllers.SetAdminRole)
 
 	// ==========================================
-	// 2. RUTE TERPROTEKSI (Satpam JWT Aktif)
+	// 2. RUTE TERPROTEKSI (JWT)
 	// ==========================================
 	api := app.Group("/api", middleware.Protected())
 
@@ -52,8 +52,11 @@ func main() {
 	api.Post("/checkout", controllers.Checkout)
 	api.Get("/orders", controllers.GetMyOrders)
 
+	// ✅ Ganti Password (endpoint baru)
+	api.Put("/change-password", controllers.ChangePassword)
+
 	// ==========================================
-	// 3. RUTE KHUSUS ADMIN (Satpam Ganda Aktif)
+	// 3. RUTE KHUSUS ADMIN
 	// ==========================================
 	admin := api.Group("/admin", middleware.IsAdmin())
 

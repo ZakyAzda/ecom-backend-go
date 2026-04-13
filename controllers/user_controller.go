@@ -3,9 +3,49 @@ package controllers
 import (
 	"ecom-backend-go/config"
 	"ecom-backend-go/models"
+	"ecom-backend-go/services"
 
 	"github.com/gofiber/fiber/v2"
 )
+
+var userService = services.UserService{}
+
+// ChangePassword - Ubah password user yang sedang login
+// PUT /api/change-password
+// Body: { "current_password": "xxx", "new_password": "yyy" }
+func ChangePassword(c *fiber.Ctx) error {
+	userID, err := getUserID(c)
+	if err != nil {
+		return c.Status(401).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	var input struct {
+		CurrentPassword string `json:"current_password"`
+		NewPassword     string `json:"new_password"`
+	}
+
+	if err := c.BodyParser(&input); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": "Input tidak valid"})
+	}
+
+	if input.CurrentPassword == "" || input.NewPassword == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "Password lama dan baru wajib diisi"})
+	}
+
+	if len(input.NewPassword) < 6 {
+		return c.Status(400).JSON(fiber.Map{"error": "Password baru minimal 6 karakter"})
+	}
+
+	if input.CurrentPassword == input.NewPassword {
+		return c.Status(400).JSON(fiber.Map{"error": "Password baru tidak boleh sama dengan password lama"})
+	}
+
+	if err := userService.ChangePassword(userID, input.CurrentPassword, input.NewPassword); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Password berhasil diubah!"})
+}
 
 // UpdateUserRole - Ubah role pengguna (khusus Admin)
 // PUT /api/admin/users/:id/role
@@ -20,7 +60,6 @@ func UpdateUserRole(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Input tidak valid"})
 	}
 
-	// Validasi nilai role yang diizinkan
 	if input.Role != "ADMIN" && input.Role != "CUSTOMER" {
 		return c.Status(400).JSON(fiber.Map{"error": "Role tidak valid. Gunakan ADMIN atau CUSTOMER"})
 	}
@@ -66,7 +105,6 @@ func SetAdminRole(c *fiber.Ctx) error {
 		return c.Status(400).JSON(fiber.Map{"error": "Input salah"})
 	}
 
-	// Kunci pengaman sederhana biar tidak sembarangan diakses
 	if input.DevKey != "sod-dev-2024" {
 		return c.Status(403).JSON(fiber.Map{"error": "Dev key salah!"})
 	}
