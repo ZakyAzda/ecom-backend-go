@@ -76,3 +76,31 @@ func GetPaymentStatus(c *fiber.Ctx) error {
 		"snap_token": order.SnapToken,
 	})
 }
+
+func UpdateOrderStatusAfterPayment(c *fiber.Ctx) error {
+	userID, err := getUserID(c)
+	if err != nil {
+		return c.Status(401).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	var input struct {
+		OrderID uint   `json:"order_id"`
+		Status  string `json:"status"`
+	}
+	if err := c.BodyParser(&input); err != nil || input.OrderID == 0 {
+		return c.Status(400).JSON(fiber.Map{"error": "input tidak valid"})
+	}
+
+	// Validasi status yang diizinkan
+	allowed := map[string]bool{"PENGIRIMAN": true, "BELUM_BAYAR": true}
+	if !allowed[input.Status] {
+		return c.Status(400).JSON(fiber.Map{"error": "status tidak valid"})
+	}
+
+	// Pastikan order milik user ini
+	if err := paymentService.UpdateStatusAfterPayment(userID, input.OrderID, input.Status); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "status berhasil diupdate"})
+}

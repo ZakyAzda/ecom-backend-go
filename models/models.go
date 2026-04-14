@@ -1,6 +1,7 @@
 package models
 
 import "gorm.io/gorm"
+import "time"
 
 type User struct {
 	gorm.Model
@@ -44,6 +45,7 @@ type Order struct {
 	Status        string      `json:"status"`         
 	PaymentMethod string      `json:"payment_method"` 
 	SnapToken     string      `json:"snap_token" gorm:"column:snap_token"`
+	SnapTokenExpiredAt  *time.Time  `json:"snap_token_expired_at" gorm:"column:snap_token_expired_at"`
 	OrderItems    []OrderItem `json:"order_items"`
 }
 

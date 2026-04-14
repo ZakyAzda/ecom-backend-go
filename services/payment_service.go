@@ -6,7 +6,7 @@ import (
 	"ecom-backend-go/repositories"
 	"errors"
 	"fmt"
-
+	"time"
 	"github.com/midtrans/midtrans-go"
 	"github.com/midtrans/midtrans-go/snap"
 )
@@ -32,58 +32,65 @@ type WebhookPayload struct {
 
 // CreateSnapToken - Buat Midtrans Snap Token untuk order tertentu
 func (s *PaymentService) CreateSnapToken(userID uint, orderID uint) (SnapTokenResult, error) {
-	// 1. Validasi order milik user
-	order, err := s.Repo.GetOrderByIDAndUser(orderID, userID)
-	if err != nil {
-		return SnapTokenResult{}, err
-	}
+    order, err := s.Repo.GetOrderByIDAndUser(orderID, userID)
+    if err != nil {
+        return SnapTokenResult{}, err
+    }
 
-	// 2. Cegah duplikasi pembayaran
-	if order.Status == "SELESAI" || order.Status == "PENGIRIMAN" {
-		return SnapTokenResult{}, errors.New("order sudah dibayar atau sedang dikirim")
-	}
+    if order.Status == "SELESAI" || order.Status == "PENGIRIMAN" {
+        return SnapTokenResult{}, errors.New("order sudah dibayar atau sedang dikirim")
+    }
 
-	// 3. Ambil data user untuk customer detail
-	user, err := s.Repo.GetUserByID(userID)
-	if err != nil {
-		return SnapTokenResult{}, errors.New("gagal mengambil data user")
-	}
+    // ✅ Reuse token jika masih valid (belum expired)
+    if order.SnapToken != "" && order.SnapTokenExpiredAt != nil {
+        if time.Now().Before(*order.SnapTokenExpiredAt) {
+            // Token masih valid → langsung return, tidak perlu ke Midtrans
+            return SnapTokenResult{
+                SnapToken: order.SnapToken,
+                OrderID:   order.ID,
+            }, nil
+        }
+        // Token expired → lanjut buat baru di bawah
+    }
 
-	// 4. Susun item detail
-	itemDetails := s.buildItemDetails(order.OrderItems)
+    user, err := s.Repo.GetUserByID(userID)
+    if err != nil {
+        return SnapTokenResult{}, errors.New("gagal mengambil data user")
+    }
 
-	// 5. Buat Snap Request ke Midtrans
-	snapReq := &snap.Request{
-		TransactionDetails: midtrans.TransactionDetails{
-			OrderID:  fmt.Sprintf("ORDER-%d-%d", order.ID, order.CreatedAt.Unix()),
-			GrossAmt: int64(order.TotalAmount),
-		},
-		CustomerDetail: &midtrans.CustomerDetails{
-			FName: user.Name,
-			Email: user.Email,
-			Phone: user.WhatsappNumber,
-		},
-		Items:           &itemDetails,
-		EnabledPayments: snap.AllSnapPaymentType,
-	}
+    itemDetails := s.buildItemDetails(order.OrderItems)
 
-	// 6. Panggil Midtrans API
-	snapResp, midErr := config.SnapClient.CreateTransaction(snapReq)
-	if midErr != nil {
-		return SnapTokenResult{}, fmt.Errorf("gagal membuat sesi pembayaran: %s", midErr.GetMessage())
-	}
+    // ✅ Pakai order.ID + expiry timestamp sebagai suffix unik
+    expiredAt := time.Now().Add(23 * time.Hour) // sedikit lebih pendek dari 24 jam Midtrans
 
-	// 7. Simpan snap_token ke database
-	if err := s.Repo.SaveSnapToken(order.ID, snapResp.Token); err != nil {
-		// Non-fatal: token sudah dapat, log saja
-		fmt.Printf("Warning: gagal menyimpan snap_token untuk order #%d: %v\n", order.ID, err)
-	}
+    snapReq := &snap.Request{
+        TransactionDetails: midtrans.TransactionDetails{
+            OrderID:  fmt.Sprintf("ORDER-%d-%d", order.ID, expiredAt.Unix()),
+            GrossAmt: int64(order.TotalAmount),
+        },
+        CustomerDetail: &midtrans.CustomerDetails{
+            FName: user.Name,
+            Email: user.Email,
+            Phone: user.WhatsappNumber,
+        },
+        Items: &itemDetails,
+    }
 
-	return SnapTokenResult{
-		SnapToken:   snapResp.Token,
-		RedirectURL: snapResp.RedirectURL,
-		OrderID:     order.ID,
-	}, nil
+    snapResp, midErr := config.SnapClient.CreateTransaction(snapReq)
+    if midErr != nil {
+        return SnapTokenResult{}, fmt.Errorf("gagal membuat sesi pembayaran: %s", midErr.GetMessage())
+    }
+
+    // ✅ Simpan token + waktu expired
+    if err := s.Repo.SaveSnapToken(order.ID, snapResp.Token, expiredAt); err != nil {
+        fmt.Printf("Warning: gagal menyimpan snap_token untuk order #%d: %v\n", order.ID, err)
+    }
+
+    return SnapTokenResult{
+        SnapToken:   snapResp.Token,
+        RedirectURL: snapResp.RedirectURL,
+        OrderID:     order.ID,
+    }, nil
 }
 
 // HandleWebhook - Proses notifikasi dari Midtrans dan update status order
@@ -173,4 +180,19 @@ func (s *PaymentService) resolveOrderStatus(transactionStatus, fraudStatus strin
 	default:
 		return "BELUM_BAYAR"
 	}
+}
+
+func (s *PaymentService) UpdateStatusAfterPayment(userID uint, orderID uint, status string) error {
+	// Validasi order milik user
+	order, err := s.Repo.GetOrderByIDAndUser(orderID, userID)
+	if err != nil {
+		return err
+	}
+
+	// Jangan update jika sudah selesai
+	if order.Status == "SELESAI" {
+		return nil
+	}
+
+	return s.Repo.UpdateOrderStatusAndPayment(orderID, status, order.PaymentMethod)
 }

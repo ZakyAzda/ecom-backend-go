@@ -4,6 +4,7 @@ import (
 	"ecom-backend-go/config"
 	"ecom-backend-go/models"
 	"errors"
+	"time"
 )
 
 type PaymentRepository struct{}
@@ -39,11 +40,14 @@ func (r *PaymentRepository) GetUserByID(userID uint) (models.User, error) {
 }
 
 // SaveSnapToken - Simpan snap_token ke kolom order
-func (r *PaymentRepository) SaveSnapToken(orderID uint, snapToken string) error {
-	return config.DB.
-		Model(&models.Order{}).
-		Where("id = ?", orderID).
-		Update("snap_token", snapToken).Error
+func (r *PaymentRepository) SaveSnapToken(orderID uint, snapToken string, expiredAt time.Time) error {
+    return config.DB.
+        Model(&models.Order{}).
+        Where("id = ?", orderID).
+        Updates(map[string]interface{}{
+            "snap_token":            snapToken,
+            "snap_token_expired_at": expiredAt,
+        }).Error
 }
 
 // UpdateOrderStatusAndPayment - Update status dan metode pembayaran order

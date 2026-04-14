@@ -63,7 +63,7 @@ func main() {
 	api.Post("/checkout", controllers.Checkout)
 	api.Get("/orders", controllers.GetMyOrders)
 	api.Put("/change-password", controllers.ChangePassword)
-
+	api.Post("/payment/update-status", controllers.UpdateOrderStatusAfterPayment)
 	// Endpoint Pembayaran Midtrans
 	api.Post("/payment/snap-token", controllers.CreateSnapToken)
 	api.Get("/payment/status/:order_id", controllers.GetPaymentStatus)
