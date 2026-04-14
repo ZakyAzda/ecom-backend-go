@@ -43,6 +43,7 @@ type Order struct {
 	Address       string      `json:"address"`
 	Status        string      `json:"status"`         
 	PaymentMethod string      `json:"payment_method"` 
+	SnapToken     string      `json:"snap_token" gorm:"column:snap_token"`
 	OrderItems    []OrderItem `json:"order_items"`
 }
 
