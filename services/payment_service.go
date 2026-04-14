@@ -143,11 +143,15 @@ func (s *PaymentService) buildItemDetails(items []models.OrderItem) []midtrans.I
 
 func (s *PaymentService) parseOrderID(raw string) uint {
 	var id uint
+	var timestamp int64
+	
+	// Gunakan format yang sama persis dengan saat CreateSnapToken
 	// Format: "ORDER-{id}-{timestamp}"
-	fmt.Sscanf(raw, "ORDER-%d-", &id)
-	if id > 0 {
+	_, err := fmt.Sscanf(raw, "ORDER-%d-%d", &id, &timestamp)
+	if err == nil && id > 0 {
 		return id
 	}
+
 	// Fallback: coba parse langsung sebagai angka
 	var directID uint
 	fmt.Sscanf(raw, "%d", &directID)
