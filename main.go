@@ -6,7 +6,7 @@ import (
 	"ecom-backend-go/middleware"
 	"ecom-backend-go/models"
 	"log"
-
+	"os"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
