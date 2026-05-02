@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"gorm.io/driver/postgres"
@@ -11,24 +11,21 @@ import (
 var DB *gorm.DB
 
 func ConnectDB() {
-	// Mengambil data dari Environment Variables
-	dbHost := os.Getenv("DB_HOST")
-	dbUser := os.Getenv("DB_USER")
-	dbPass := os.Getenv("DB_PASSWORD")
-	dbName := os.Getenv("DB_NAME")
-	dbPort := os.Getenv("DB_PORT")
+	dsn := os.Getenv("DATABASE_URL")
 
-	// Jika menggunakan Supabase, biasanya butuh SSL Mode
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=require",
-		dbHost, dbUser, dbPass, dbName, dbPort)
-
-	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-
-	if err != nil {
-		fmt.Println("Gagal connect ke database lek!")
-		panic(err)
+	if dsn == "" {
+		log.Fatal("Error: DATABASE_URL belum diatur!")
 	}
 
-	DB = database
-	fmt.Println("Database terkoneksi aman jaya!")
+	var err error
+	DB, err = gorm.Open(postgres.New(postgres.Config{
+		DSN:                  dsn,
+		PreferSimpleProtocol: true,
+	}), &gorm.Config{})
+
+	if err != nil {
+		log.Fatal("Gagal connect ke database lek! \n", err)
+	}
+
+	log.Println("Database terkoneksi aman jaya!")
 }
