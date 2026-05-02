@@ -8,7 +8,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/joho/godotenv" // Tambahkan jika ingin support .env lokal
+	// "github.com/joho/godotenv" // Tambahkan jika ingin support .env lokal
 	"golang.org/x/crypto/bcrypt"
 )
 
