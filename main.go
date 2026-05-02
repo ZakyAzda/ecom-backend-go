@@ -83,5 +83,9 @@ func main() {
 	admin.Get("/users", controllers.GetAllUsers)
 	admin.Put("/users/:id/role", controllers.UpdateUserRole)
 
-	log.Fatal(app.Listen("0.0.0.0:3000"))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+	log.Fatal(app.Listen("0.0.0.0:" + port))
 }
