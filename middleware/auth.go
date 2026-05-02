@@ -1,7 +1,9 @@
 package middleware
 
 import (
+	"os"
 	"strings"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -15,7 +17,7 @@ func Protected() fiber.Handler {
 
 		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte("rahasia_negara_123"), nil
+			return []byte(os.Getenv("JWT_SECRET")), nil // ✅ dari env
 		})
 
 		if err != nil || !token.Valid {
@@ -30,12 +32,16 @@ func Protected() fiber.Handler {
 
 func IsAdmin() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Ambil role langsung dari JWT claims (lebih efisien, tanpa query DB)
 		authHeader := c.Get("Authorization")
 		tokenString := strings.Replace(authHeader, "Bearer ", "", 1)
 		token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			return []byte("rahasia_negara_123"), nil
+			return []byte(os.Getenv("JWT_SECRET")), nil // ✅ dari env
 		})
+
+		if token == nil || !token.Valid {
+			return c.Status(401).JSON(fiber.Map{"error": "Akses ditolak, token ga valid!"})
+		}
+
 		claims := token.Claims.(jwt.MapClaims)
 		role, _ := claims["role"].(string)
 

@@ -1,7 +1,9 @@
 package config
 
 import (
-	"log"
+	"fmt"
+	"os"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -9,10 +11,24 @@ import (
 var DB *gorm.DB
 
 func ConnectDB() {
-	dsn := "host=localhost user=postgres password=12345678 dbname=ecommerce_db port=5432 sslmode=disable TimeZone=Asia/Jakarta"
-	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	// Mengambil data dari Environment Variables
+	dbHost := os.Getenv("DB_HOST")
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+	dbPort := os.Getenv("DB_PORT")
+
+	// Jika menggunakan Supabase, biasanya butuh SSL Mode
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=require",
+		dbHost, dbUser, dbPass, dbName, dbPort)
+
+	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+
 	if err != nil {
-		log.Fatal("Gagal connect ke database lek! \n", err)
+		fmt.Println("Gagal connect ke database lek!")
+		panic(err)
 	}
+
+	DB = database
+	fmt.Println("Database terkoneksi aman jaya!")
 }
