@@ -32,6 +32,7 @@ type Product struct {
 type Cart struct {
 	gorm.Model
 	UserID    uint    `json:"user_id"`
+	User      User    `json:"user" gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	ProductID uint    `json:"product_id"`
 	Product   Product `json:"product" gorm:"foreignKey:ProductID;references:ID"`
 	Quantity  int     `json:"quantity"`
@@ -40,6 +41,7 @@ type Cart struct {
 type Order struct {
 	gorm.Model
 	UserID        uint        `json:"user_id"`
+	User          User        `json:"user" gorm:"foreignKey:UserID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 	TotalAmount   int         `json:"total_amount"`
 	Address       string      `json:"address"`
 	Status        string      `json:"status"`         
